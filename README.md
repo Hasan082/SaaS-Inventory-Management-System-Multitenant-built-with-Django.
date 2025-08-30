@@ -1,1 +1,1 @@
-# SaaS Inventory Management System (Multitenant) built with Django.
+# SaaS Inventory Management System (Multitenant) - Django

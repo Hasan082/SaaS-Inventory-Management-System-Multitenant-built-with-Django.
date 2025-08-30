@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
 import os
 from dotenv import load_dotenv
 from pathlib import Path
@@ -21,7 +22,10 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-&_4^ycu(c-lcf3bffvbtyu!422h#+!82@-3_o=jn(_fj)+czar")
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-&_4^ycu(c-lcf3bffvbtyu!422h#+!82@-3_o=jn(_fj)+czar",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
@@ -39,7 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "tenants",
-    "inventory",   
+    "inventory",
 ]
 
 
@@ -77,20 +81,18 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-
-import os
+IS_DOCKER = os.environ.get("DJANGO_IN_DOCKER") == "1"
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("POSTGRES_DB", "saas_inventory"),
-        "USER": os.environ.get("POSTGRES_USER", "postgres"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "01712062236"),
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "USER": os.environ.get("POSTGRES_USER") if IS_DOCKER else "postgres",
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD") if IS_DOCKER else "01712062236",
+        "HOST": os.environ.get("POSTGRES_HOST") if IS_DOCKER else "localhost",
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
-
 
 
 # DATABASES = {
@@ -141,7 +143,6 @@ STATICFILES_DIRS = [
     BASE_DIR / "core/static",
 ]
 # STATIC_ROOT = BASE_DIR / "core/static"  # For production
-
 
 
 # Media files

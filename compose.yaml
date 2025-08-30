@@ -23,7 +23,7 @@ services:
       POSTGRES_USER: saas_user
       POSTGRES_PASSWORD: saas_password
     ports:
-      - "5432:5432"  # PostgreSQL default port
+      - "5433:5432"  # PostgreSQL default port
     networks:
       - appnet
     volumes:

@@ -20,6 +20,16 @@ RUN pip install --upgrade pip \
 # Copy the rest of the project
 COPY . .
 
+COPY entrypoint.sh .
+
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
+# Expose the port
 EXPOSE 8000
 
+# Use entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Development server with hot reload
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

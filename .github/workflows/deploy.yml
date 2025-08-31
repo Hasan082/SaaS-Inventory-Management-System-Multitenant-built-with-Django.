@@ -1,35 +1,18 @@
-name: Django CD
+services:
+  web:
+    image: hasan082/inventory-app:latest
+    ports:
+      - "9001:8000"
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+    depends_on:
+      - db
 
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /path/to/app
-
-            # Pull latest images and rebuild
-            docker-compose pull
-            docker-compose up -d --build
-
-            # Apply database migrations
-            docker-compose exec web python manage.py migrate --noinput
-
-            # Collect static files
-            docker-compose exec web python manage.py collectstatic --noinput
-
-            # Optional: restart containers if needed
-            docker-compose restart
+  db:
+    image: postgres:17
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"

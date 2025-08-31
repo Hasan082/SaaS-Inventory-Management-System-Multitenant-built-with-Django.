@@ -15,7 +15,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_DB: test_db  # This creates 'test_db' database
           POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
         options: >-
@@ -25,11 +25,9 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_NAME: test_db
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
-      DATABASE_HOST: localhost
-      DATABASE_PORT: 5432
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      SECRET_KEY: ${{ secrets.SECRET_KEY || 'dummy-secret-key-for-testing' }}
 
     steps:
       - name: Checkout code
@@ -45,11 +43,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Create database (if needed)
+        run: |
+          # Create the specific database your app expects
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE saas_inventory;"
+
       - name: Run migrations
         run: python manage.py migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_inventory
 
       - name: Run tests
         run: python manage.py test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_inventory
 
       - name: Build Docker image
         run: docker build -t hasan082/inventory-app:latest .

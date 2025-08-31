@@ -161,3 +161,6 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

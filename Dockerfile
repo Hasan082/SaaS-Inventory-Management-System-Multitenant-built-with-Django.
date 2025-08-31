@@ -1,30 +1,25 @@
-# Use the official Python image
+# Use Official Python slim image
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Set the working directory
+# Set working directory
+# Dockerfile.dev
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Copy requirements from root (context is project root)
+COPY requirements.txt .
 
-# Install Python dependencies
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir --upgrade pip \
+# Install dependencies
+RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy the project files
-COPY . /app/
+# Copy the rest of the project
+COPY . .
 
-# Expose the port Django runs on
 EXPOSE 8000
 
-# Run the Django development server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

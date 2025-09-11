@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     'inventory.apps.InventoryConfig',
     'staff.apps.StaffConfig',
     'subscriptions.apps.SubscriptionsConfig',
+] + [
+    "crispy_forms",
+    "crispy_bootstrap5",
 ]
 
 
@@ -74,18 +77,23 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 IS_DOCKER = os.environ.get("DJANGO_IN_DOCKER") == "1"
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.environ.get("POSTGRES_DB", "saas_inventory"),
+#         "USER": os.environ.get("POSTGRES_USER") if IS_DOCKER else "postgres",
+#         "PASSWORD": os.environ.get("POSTGRES_PASSWORD") if IS_DOCKER else "01712062236",
+#         "HOST": os.environ.get("POSTGRES_HOST") if IS_DOCKER else "localhost",
+#         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+#     }
+# }
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "saas_inventory"),
-        "USER": os.environ.get("POSTGRES_USER") if IS_DOCKER else "postgres",
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD") if IS_DOCKER else "01712062236",
-        "HOST": os.environ.get("POSTGRES_HOST") if IS_DOCKER else "localhost",
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -145,6 +153,20 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    
 
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'your_email@gmail.com'
+    EMAIL_HOST_PASSWORD = 'your_email_password'
+    
+    
+    
+    
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

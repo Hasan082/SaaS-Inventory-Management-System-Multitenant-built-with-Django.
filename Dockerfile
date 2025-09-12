@@ -29,7 +29,7 @@ RUN chmod +x entrypoint.sh
 EXPOSE 8000
 
 # Use entrypoint script
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["sh", "-c", "./entrypoint.sh \"$@\"", "--"]
 
 # Development server with hot reload
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

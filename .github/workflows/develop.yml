@@ -9,25 +9,10 @@ jobs:
   test-and-build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       DJANGO_SETTINGS_MODULE: core.settings
-      SECRET_KEY: ${{ secrets.SECRET_KEY || 'dummy-secret-key-for-testing' }}
+      # The correct variable name for your Django project.
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'dummy-secret-key-for-testing' }}
 
     steps:
       - name: Checkout code
@@ -43,20 +28,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create database (if needed)
-        run: |
-          # Create the specific database your app expects
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE saas_inventory;"
-
       - name: Run migrations
         run: python manage.py migrate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_inventory
-
+      
       - name: Run tests
         run: python manage.py test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_inventory
 
       - name: Build Docker image
         run: docker build -t hasan082/inventory-app:latest .

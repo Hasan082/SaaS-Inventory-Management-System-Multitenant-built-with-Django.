@@ -7,7 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 # Set working directory
-# Dockerfile.dev
 WORKDIR /app
 
 # Copy requirements from root (context is project root)
@@ -20,16 +19,15 @@ RUN pip install --upgrade pip \
 # Copy the rest of the project
 COPY . .
 
+# Copy entrypoint and make it executable
 COPY entrypoint.sh .
-
-# Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
 # Expose the port
 EXPOSE 8000
 
-# Use entrypoint script
-ENTRYPOINT ["sh", "-c", "./entrypoint.sh \"$@\"", "--"]
+# Use exec form for ENTRYPOINT to correctly handle arguments
+ENTRYPOINT ["./entrypoint.sh"]
 
-# Development server with hot reload
+# Pass CMD arguments to the ENTRYPOINT script
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

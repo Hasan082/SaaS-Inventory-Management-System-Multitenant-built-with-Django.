@@ -1,55 +1,108 @@
 #!/bin/sh
-# This script sets up the Django environment for a container or a fresh installation.
+# Django entrypoint script for containers
+# Handles database migrations, superuser creation, and server startup
 
-# Exit immediately if a command exits with a non-zero status.
 set -e
 
-# ---
-# Configure environment variables
-# ---
-
-# Ensure the .env file exists.
-touch .env
-
-# Generate a new Django SECRET_KEY if it's not already set in the .env file.
-if ! grep -q "^DJANGO_SECRET_KEY=" .env; then
-  echo "DJANGO_SECRET_KEY=$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')" >> .env
+# Load environment variables from .env
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
 fi
 
-# Set default values for superuser credentials if they aren't provided as environment variables.
+# Generate DJANGO_SECRET_KEY if empty
+if [ -z "$DJANGO_SECRET_KEY" ]; then
+  SECRET_KEY=$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
+  echo "DJANGO_SECRET_KEY=$SECRET_KEY" >> .env
+  export DJANGO_SECRET_KEY=$SECRET_KEY
+  echo "Generated DJANGO_SECRET_KEY: $SECRET_KEY"
+fi
+
+# ---
+# Utility functions
+# ---
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+error() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1" >&2
+    exit 1
+}
+
+# ---
+# Environment validation
+# ---
+
+log "Starting Django application setup..."
+
+# Check if manage.py exists
+if [ ! -f "manage.py" ]; then
+    error "manage.py not found. Run this script from Django project root"
+fi
+
+# Check Django installation
+if ! python -c "import django" 2>/dev/null; then
+    error "Django not installed or not accessible"
+fi
+
+# ---
+# Environment configuration
+# ---
+
+# Create .env file if it doesn't exist
+touch .env
+
+# Generate Django SECRET_KEY if not present
+if ! grep -q "^DJANGO_SECRET_KEY=" .env; then
+    log "Generating Django SECRET_KEY..."
+    SECRET_KEY=$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
+    echo "DJANGO_SECRET_KEY=${SECRET_KEY}" >> .env
+fi
+
+# Set default superuser credentials
 : "${DJANGO_SUPERUSER_USERNAME:=admin}"
 : "${DJANGO_SUPERUSER_EMAIL:=admin@example.com}"
 : "${DJANGO_SUPERUSER_PASSWORD:=password}"
 
 # ---
-# Apply database migrations
+# Database setup
 # ---
 
-echo "Applying database migrations..."
+log "Applying database migrations..."
 python manage.py migrate
 
+log "Creating superuser if needed..."
+# Create superuser if not exists
+python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+username = '$DJANGO_SUPERUSER_USERNAME'
+password = '$DJANGO_SUPERUSER_PASSWORD'
+email = '$DJANGO_SUPERUSER_EMAIL'
+user, created = User.objects.get_or_create(username=username, defaults={'email': email, 'is_staff': True, 'is_superuser': True, 'is_active': True})
+if created:
+    user.set_password(password)
+    user.save()
+    print('Superuser created:', username)
+else:
+    print('Superuser already exists:', username)
+"
+
 # ---
-# Create superuser if it doesn't already exist
+# Static files (optional)
 # ---
 
-echo "Creating superuser '${DJANGO_SUPERUSER_USERNAME}' if it doesn't exist..."
-# The logical OR (||) operator in Python's evaluation ensures that create_superuser is only called
-# if the filter(...) returns an empty queryset (which evaluates to False).
-python manage.py shell -c "from django.contrib.auth import get_user_model; \
-User = get_user_model(); \
-username = '${DJANGO_SUPERUSER_USERNAME}'; \
-email = '${DJANGO_SUPERUSER_EMAIL}'; \
-password = '${DJANGO_SUPERUSER_PASSWORD}'; \
-if not User.objects.filter(username=username).exists(): \
-    User.objects.create_superuser(username=username, email=email, password=password); \
-    print(f'Superuser {username} created successfully.'); \
-else: \
-    print(f'Superuser {username} already exists. Skipping creation.');"
+if python manage.py help collectstatic >/dev/null 2>&1; then
+    log "Collecting static files..."
+    python manage.py collectstatic --noinput --clear >/dev/null 2>&1 || true
+fi
 
 # ---
-# Start the main process (e.g., development server)
+# Start application
 # ---
 
-# Execute the command passed to the script (e.g., 'python manage.py runserver 0.0.0.0:8000')
-echo "Starting Django server..."
+log "Setup complete! Starting application..."
+log "Superuser: ${DJANGO_SUPERUSER_USERNAME} / ${DJANGO_SUPERUSER_EMAIL}"
+
 exec "$@"
